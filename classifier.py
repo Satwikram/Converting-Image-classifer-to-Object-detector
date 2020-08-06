@@ -62,4 +62,68 @@ for image in pyramid:
         x = int(x * scale)
         y = int(y * scale)
         w = int(ROI_SIZE[0] * scale)
-        h = int()
+        h = int(ROI_SIZE[1] * scale)
+
+        roi = cv2.resize(roiOrig, INPUT_SIZE)
+        roi = img_to_array(roi)
+        roi = preprocess_input(roi)
+
+        rois.append(roi)
+        locs.append((x, y, x + w, y + h))
+
+        if args["visualize"] > 0:
+            clone = orig.copy()
+            cv2.rectange(clone, (x,y), (x+w),(y+h), (0, 255, 0), 2)
+            cv2.imshow("Visualization", clone)
+            cv2.imshow("ROI", roiOrig)
+            cv2.waitKey(0)
+
+end = time.time()
+print("[INFO] looping over pyramid/windows took {:.5f} seconds".format(
+	end - start))
+
+rois = np.array(rois, dtype = "float32")
+
+# classify each of the proposal ROIs using ResNet and then show how
+# long the classifications took
+print("[INFO] classifying ROIs...")
+start = time.time()
+preds = model.predict(rois)
+
+
+end = time.time()
+print("[INFO] classifying ROIs took {:.5f} seconds".format(
+	end - start))
+
+preds = imagenet_utils.decode_predictions(preds, top=1)
+labels = {}
+print("The prediction is",preds)
+
+for i,p in enumerate(preds):
+    (imagenetID, label, prob) = p[0]
+
+    if prob >= args["min_conf"]:
+        # grab the bounding box associated with the prediction and
+        # convert the coordinates
+        box = locs[i]
+
+        L = labels.get(label, [])
+        L.append((box, prob))
+        labels[label] = L
+
+for label in labels.keys():
+    print("[INFO] showing results for '{}'".format(label))
+    clone = orig.copy()
+
+    for box, prob in labels[label]:
+        (startX, startY, endX, endY) = box
+        cv2.rectangle(clone, (startX, startY), (endX, endY),
+                      (0, 255, 0), 2)
+
+    cv2.imshow("Before", clone)
+    clone = orig.copy()
+
+    boxes = np.array([p[0] for p in labels[label]])
+    proba = np.array([p[1] for p in labels[label]])
+
+    boxes = non_max_suppression(boxes, proba)
