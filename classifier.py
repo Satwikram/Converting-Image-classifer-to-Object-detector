@@ -35,6 +35,9 @@ INPUT_SIZE = (224, 224)
 # load our network weights from disk
 print("[INFO] loading network...")
 model = ResNet50(weights="imagenet", include_top=True)
+#model.save('resnet.h5')
+
+
 
 # load the input image from disk, resize it such that it has the
 # has the supplied width, and then grab its dimensions
