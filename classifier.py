@@ -127,3 +127,15 @@ for label in labels.keys():
     proba = np.array([p[1] for p in labels[label]])
 
     boxes = non_max_suppression(boxes, proba)
+
+    for (startX, startY, endX, endY) in boxes:
+        # draw the bounding box and label on the image
+        cv2.rectangle(clone, (startX, startY), (endX, endY),
+                      (0, 255, 0), 2)
+
+        y = startY - 10 if startY - 10 > 10 else startY + 10
+        cv2.putText(clone, label, (startX, y),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
+        # show the output after apply non-maxima suppression
+    cv2.imshow("After", clone)
+    cv2.waitKey(0)
